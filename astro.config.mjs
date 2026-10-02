@@ -13,8 +13,8 @@ import sitemap from '@astrojs/sitemap';
  * asset paths so the base path is applied automatically.
  */
 export default defineConfig({
-  site: 'https://YOUR-GITHUB-USER.github.io',
-  base: '/',
+  site: 'https://luxmarius.github.io',
+  base: '/outdo',
   trailingSlash: 'ignore',
   integrations: [sitemap()],
 });
