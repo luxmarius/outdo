@@ -1,0 +1,14 @@
+---
+interface Props { text: string; author: string }
+const { text, author } = Astro.props;
+---
+<blockquote class="quote">
+  <p>“{text}”</p>
+  <footer>{author}</footer>
+</blockquote>
+
+<style>
+  .quote { margin: 0; padding: 0; text-align: center; }
+  .quote p { font-family: var(--font-display); font-style: italic; font-size: clamp(1.6rem, 3.4vw, 2.6rem); line-height: 1.25; max-width: 30ch; margin: 0 auto 1.25rem; }
+  footer { color: var(--ink-soft); }
+</style>

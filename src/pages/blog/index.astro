@@ -1,0 +1,34 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { url } from '../../lib/url';
+import { formatDate } from '../../lib/format';
+const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+---
+<Base title="Notes" description="Notes on going on holiday with your bike.">
+  <section class="section wrap">
+    <div class="centre">
+      <h1>Notes</h1>
+      <p class="lede">Things we've worked out about travelling with a bike. Packing, planning, trains, and the mistakes worth avoiding.</p>
+    </div>
+    <ul class="list">
+      {posts.map((p) => (
+        <li>
+          <p class="meta">{formatDate(p.data.date)} · {p.data.author}</p>
+          <a href={url(`/blog/${p.id}`)}><h2>{p.data.title}</h2></a>
+          <p>{p.data.description}</p>
+        </li>
+      ))}
+    </ul>
+  </section>
+</Base>
+
+<style>
+  .lede { color: var(--ink-soft); margin-bottom: 4rem; }
+  .list { list-style: none; padding: 0; margin: 0 auto; max-width: 720px; border-top: 1px solid var(--line); }
+  li { padding: 2.5rem 0; border-bottom: 1px solid var(--line); }
+  li a { color: inherit; text-decoration: none; }
+  li a:hover h2 { color: var(--moss); }
+  li h2 { font-size: clamp(1.8rem, 3.4vw, 2.5rem); margin: 0.4rem 0 0.6rem; }
+  li p:last-child { margin: 0; color: var(--ink-soft); }
+</style>

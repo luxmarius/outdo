@@ -1,0 +1,133 @@
+---
+import { getCollection, getEntry } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import Scene from '../components/Scene.astro';
+import TripCarousel from '../components/TripCarousel.astro';
+import site from '../data/site.json';
+import { url } from '../lib/url';
+
+const entries = (await getCollection('journal')).sort((a, b) => a.data.order - b.data.order);
+const journalSlides = (await Promise.all(entries.map(async (entry) => {
+  const data = entry.data;
+  if (data.kind === 'preview') return { id: entry.id, title: data.title, place: data.place, cover: data.cover, coverAlt: data.coverAlt };
+  const trip = await getEntry(data.trip);
+  if (!trip) throw new Error(`Journal entry ${entry.id} references a missing trip.`);
+  if (trip.data.draft) return null;
+  const d = trip.data;
+  return {
+    id: entry.id, title: d.title, place: d.countries.join(' / '), cover: d.cover, coverAlt: d.title,
+    href: `/trips/${trip.id}`, date: d.start.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }),
+    film: d.youtube,
+  };
+}))).filter((slide) => slide !== null);
+const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()).slice(0, 3);
+const home = site.home;
+---
+<Base overlayHeader>
+  <section class="home-hero" aria-labelledby="home-title">
+    <Scene cover={home.heroCover} video={home.heroVideo} autoplay />
+    <div class="hero-shade" aria-hidden="true"></div>
+    <div class="wrap hero-content">
+      <p class="eyebrow">{home.eyebrow}</p>
+      <h1 id="home-title" aria-label={home.headline.join(" ")}>{home.headline.map((line) => <span aria-hidden="true">{line}</span>)}</h1>
+      <div class="hero-bottom">
+        <p>{home.intro}</p>
+        <a class="hero-explore" href="#journal"><span>{home.heroLink}</span><span class="round-arrow" aria-hidden="true">↓</span></a>
+      </div>
+    </div>
+    <div class="hero-foot wrap"><span>Outdo · Friends on bikes</span><span>Away from the everyday</span></div>
+  </section>
+
+  <section class="section wrap story" aria-labelledby="why-title">
+    <div class="story-aside"><p class="eyebrow"><span class="dot" aria-hidden="true"></span>{home.storyLabel}</p><p class="aside-text">{home.places}</p></div>
+    <div>
+      <h2 id="why-title">{home.storyTitle}</h2>
+      <div class="story-copy"><p>{home.storyBody}</p><p>{home.storyAfterword}</p></div>
+      <a class="text-link" href={url('/about')}>A little about us <span aria-hidden="true">↗</span></a>
+    </div>
+  </section>
+
+  <section class="section wrap journal" id="journal" aria-labelledby="journal-title">
+    <div class="section-head">
+      <div><p class="eyebrow">The trip journal</p><h2 id="journal-title">{home.journalTitle}</h2></div>
+      <div class="section-aside"><p>{home.journalDescription}</p><a class="text-link" href={url('/trips')}>Browse the trips <span aria-hidden="true">↗</span></a></div>
+    </div>
+    <TripCarousel slides={journalSlides} />
+  </section>
+
+  <section class="evenings" aria-labelledby="evenings-title">
+    <div class="wrap evenings-layout">
+      <p class="eyebrow">{home.memoryLabel}</p>
+      <div><h2 id="evenings-title">{home.memoryTitle}</h2><p class="evenings-copy">{home.memoryBody}</p><p class="evenings-afterword">{home.memoryAfterword}</p></div>
+    </div>
+  </section>
+
+  {posts.length > 0 && (
+    <section class="section wrap notes" aria-labelledby="notes-title">
+      <div class="section-head">
+        <div><p class="eyebrow">Notes from the road</p><h2 id="notes-title">{home.notesTitle}</h2></div>
+        <div class="section-aside"><p>{home.notesDescription}</p><a class="text-link" href={url('/blog')}>All notes <span aria-hidden="true">↗</span></a></div>
+      </div>
+      <ul class="posts">{posts.map((post) => (
+        <li><a href={url(`/blog/${post.id}`)}><div><p class="meta">{post.data.tags.join(' / ') || 'Field notes'}</p><h3>{post.data.title}</h3><p class="post-description">{post.data.description}</p></div><span class="post-arrow" aria-hidden="true">↗</span></a></li>
+      ))}</ul>
+    </section>
+  )}
+</Base>
+
+<style>
+  .home-hero { min-height: min(960px, 100svh); position: relative; isolation: isolate; display: flex; flex-direction: column; justify-content: end; background: var(--pine); color: var(--on-dark); }
+  .hero-shade { position: absolute; inset: 0; background: var(--shade); z-index: -1; }
+  .hero-content { padding-top: 14rem; padding-bottom: 3rem; }
+  .hero-content > .eyebrow { margin-bottom: 1.5rem; }
+  h1 { font-size: clamp(3.7rem, 9.6vw, 9.6rem); line-height: 0.96; letter-spacing: -0.025em; margin: 0 0 2.5rem; }
+  h1 span { display: block; }
+  .hero-bottom { display: flex; align-items: end; justify-content: space-between; gap: 2rem; }
+  .hero-bottom p { font-size: clamp(1rem, 1.5vw, 1.2rem); max-width: 31ch; line-height: 1.5; margin: 0; }
+  .hero-explore { display: inline-flex; align-items: center; gap: 2rem; color: inherit; text-decoration: none; font-size: 0.95rem; }
+  .round-arrow { border: 1px solid var(--on-dark-soft); width: 3.25rem; height: 3.25rem; display: grid; place-items: center; border-radius: 50%; font-size: 1.4rem; transition: background 150ms ease, color 150ms ease; }
+  .hero-explore:hover .round-arrow { background: var(--on-dark); color: var(--ink); }
+  .hero-foot { display: flex; justify-content: space-between; border-top: 1px solid var(--on-dark-soft); padding-block: 1rem; font-size: 0.75rem; }
+  .story { display: grid; grid-template-columns: 1fr 2fr; gap: 4rem; }
+  .story-aside .eyebrow { display: flex; align-items: center; gap: 0.6rem; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--lake); }
+  .aside-text { margin-top: 4rem; color: var(--ink-soft); font-size: 0.85rem; line-height: 1.8; }
+  .story h2 { max-width: 15ch; font-size: clamp(2.8rem, 5.6vw, 5.25rem); margin-bottom: 2rem; }
+  .story-copy { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 1rem; color: var(--ink-soft); font-size: 1rem; }
+  .section-head { display: grid; grid-template-columns: 2fr 1fr; gap: 3rem; align-items: end; margin-bottom: 3rem; }
+  .section-head h2 { max-width: 14ch; margin-bottom: 0; }
+  .section-aside { max-width: 30ch; justify-self: end; font-size: 1rem; }
+  .section-aside p { color: var(--ink-soft); margin-bottom: 0.75rem; }
+  .evenings { background: var(--pine); color: var(--on-dark); padding-block: clamp(4rem, 9vw, 9rem); }
+  .evenings-layout { display: grid; grid-template-columns: 1fr 2fr; gap: 4rem; }
+  .evenings h2 { max-width: 14ch; }
+  .evenings-copy { max-width: 43ch; font-size: clamp(1.2rem, 2vw, 1.7rem); line-height: 1.55; color: var(--on-dark-soft); margin-top: 2rem; }
+  .evenings-afterword { font-size: 0.85rem; margin: 2.5rem 0 0; }
+  .posts { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  .posts li { border-bottom: 1px solid var(--line); }
+  .posts a { display: flex; justify-content: space-between; align-items: center; gap: 2rem; padding-block: 2rem; text-decoration: none; color: inherit; }
+  .posts a:hover h3, .posts a:hover .post-arrow { color: var(--lake); }
+  .posts .meta { margin-bottom: 0.6rem; }
+  .posts h3 { margin-bottom: 0.45rem; }
+  .post-description { color: var(--ink-soft); font-size: 0.95rem; margin: 0; }
+  .post-arrow { font-size: 2rem; }
+  @media (min-width: 1600px) { .home-hero { min-height: 960px; } }
+  @media (max-width: 760px) {
+    .home-hero { min-height: 90svh; }
+    .home-hero :global(.scene-media) { object-position: 44% center; }
+    .hero-content { padding-top: 14rem; padding-bottom: 2rem; }
+    h1 { font-size: clamp(3.15rem, 10vw, 5rem); margin-bottom: 2rem; }
+    .hero-bottom { align-items: start; flex-direction: column; gap: 2rem; }
+    .hero-bottom p { max-width: 32ch; }
+    .hero-explore { width: 100%; justify-content: space-between; }
+    .hero-foot { font-size: 0.65rem; }
+    .story, .evenings-layout { grid-template-columns: 1fr; gap: 1.5rem; }
+    .aside-text { display: none; }
+    .story h2 { max-width: 15ch; }
+    .story-copy { grid-template-columns: 1fr; gap: 0; }
+    .section-head { grid-template-columns: 1fr; gap: 1.25rem; margin-bottom: 2rem; }
+    .section-aside { justify-self: start; max-width: 35ch; }
+    .evenings-copy { margin-top: 1.5rem; }
+    .posts a { gap: 1rem; }
+  }
+</style>

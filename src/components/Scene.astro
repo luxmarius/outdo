@@ -1,0 +1,91 @@
+---
+import { url } from '../lib/url';
+interface Props { cover: string; video?: string; autoplay?: boolean }
+const { cover, video, autoplay = false } = Astro.props;
+---
+<outdo-scene data-autoplay={autoplay ? '' : undefined}>
+  {video
+    ? <video class="scene-media" poster={url(cover)} data-src={url(video)} muted loop playsinline preload="none" aria-hidden="true"></video>
+    : <img class="scene-media" src={url(cover)} alt="" fetchpriority="high" />}
+  {video && <button class="scene-toggle" type="button" aria-label="Play background scene" aria-pressed="false" hidden><span class="scene-symbol" aria-hidden="true">▷</span><span class="scene-label">Play scene</span></button>}
+  <span class="sr-only scene-status" role="status"></span>
+</outdo-scene>
+
+<script>
+  class OutdoScene extends HTMLElement {
+    private cleanup?: () => void;
+    connectedCallback() {
+      const video = this.querySelector('video');
+      const button = this.querySelector<HTMLButtonElement>('button');
+      if (!video || !button || this.cleanup) return;
+      const events = new AbortController();
+      const options = { signal: events.signal };
+      const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+      const label = button.querySelector('.scene-label');
+      const symbol = button.querySelector('.scene-symbol');
+      const status = this.querySelector('.scene-status');
+      let wantsPlayback = this.hasAttribute('data-autoplay') && !motion.matches;
+      let inView = false;
+      let starting = false;
+      video.muted = true;
+      button.hidden = false;
+      const update = () => {
+        const playing = !video.paused;
+        button.setAttribute('aria-pressed', String(playing));
+        button.setAttribute('aria-label', `${playing ? 'Pause' : 'Play'} background scene`);
+        if (label) label.textContent = playing ? 'Pause scene' : 'Play scene';
+        if (symbol) symbol.textContent = playing ? 'Ⅱ' : '▷';
+      };
+      const play = async (automatic = true) => {
+        if (starting || !wantsPlayback || !inView || document.hidden) return;
+        starting = true;
+        button.disabled = true;
+        if (status) status.textContent = '';
+        try {
+          if (!video.getAttribute('src')) video.src = video.dataset.src!;
+          await video.play();
+          if (!wantsPlayback || !inView || document.hidden || events.signal.aborted) video.pause();
+        } catch {
+          if (!automatic && status) status.textContent = 'The scene could not play. You can still explore the journal below.';
+        } finally {
+          starting = false;
+          button.disabled = false;
+          update();
+        }
+      };
+      video.addEventListener('play', update, options);
+      video.addEventListener('pause', update, options);
+      button.addEventListener('click', () => {
+        if (!video.paused) { wantsPlayback = false; video.pause(); }
+        else { wantsPlayback = true; void play(false); }
+      }, options);
+      const visibility = new IntersectionObserver(([entry]) => {
+        inView = entry.isIntersecting;
+        if (inView) void play();
+        else video.pause();
+      });
+      visibility.observe(video);
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) video.pause();
+        else void play();
+      }, options);
+      motion.addEventListener('change', () => {
+        if (motion.matches) { wantsPlayback = false; video.pause(); }
+      }, options);
+      update();
+      this.cleanup = () => { events.abort(); visibility.disconnect(); video.pause(); this.cleanup = undefined; };
+    }
+    disconnectedCallback() { this.cleanup?.(); }
+  }
+  if (!customElements.get('outdo-scene')) customElements.define('outdo-scene', OutdoScene);
+</script>
+
+<style>
+  outdo-scene { display: contents; }
+  .scene-media { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+  .scene-toggle { position: absolute; right: var(--gutter); top: 7.2rem; display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.9rem; border: 1px solid var(--on-dark-soft); border-radius: 999px; color: var(--on-dark); background: var(--shade-control); font-size: 0.75rem; }
+  .scene-toggle[hidden] { display: none; }
+  .scene-toggle:hover { background: var(--pine); }
+  .scene-symbol { width: 1em; text-align: center; }
+  .scene-toggle:disabled { cursor: wait; }
+</style>

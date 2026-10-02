@@ -1,0 +1,21 @@
+---
+import { km, metres } from '../lib/format';
+interface Props { days: { km: number; ascent: number; descent: number }[]; countries: string[]; riders: string[] }
+const { days, countries, riders } = Astro.props;
+const total = (k: 'km' | 'ascent' | 'descent') => days.reduce((s, d) => s + d[k], 0);
+---
+<dl class="totals">
+  <div><dt>Distance</dt><dd>{km(total('km'))}</dd></div>
+  <div><dt>Climbing</dt><dd>{metres(total('ascent'))}</dd></div>
+  <div><dt>Days</dt><dd>{days.length}</dd></div>
+  <div><dt>Countries</dt><dd>{countries.length}</dd></div>
+  <div><dt>Riders</dt><dd>{riders.join(', ')}</dd></div>
+</dl>
+
+<style>
+  .totals { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.75rem 2rem; margin: 0; }
+  @media (min-width: 760px) { .totals { grid-template-columns: repeat(5, auto); justify-content: start; gap: 2rem 4rem; } }
+  dt { color: var(--ink-soft); font-size: 0.95rem; margin-bottom: 0.2rem; }
+  .totals > div:last-child dd { font-family: var(--font-body); font-weight: 500; font-size: 1rem; max-width: 15ch; line-height: 1.5; }
+  dd { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.8rem, 3.2vw, 2.6rem); line-height: 1.1; letter-spacing: -0.01em; }
+</style>

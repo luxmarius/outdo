@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Outdo placeholder" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk><name>Munich to Lake Garda (placeholder, coarse)</name><trkseg>
+    <trkpt lat="48.1372" lon="11.5756"/><trkpt lat="47.8300" lon="11.3400"/><trkpt lat="47.5900" lon="11.0900"/>
+    <trkpt lat="47.4900" lon="10.7500"/><trkpt lat="47.2450" lon="10.7400"/><trkpt lat="47.0800" lon="10.5900"/>
+    <trkpt lat="46.8900" lon="10.5000"/><trkpt lat="46.7500" lon="10.6300"/><trkpt lat="46.6700" lon="11.1600"/>
+    <trkpt lat="46.4900" lon="11.3300"/><trkpt lat="46.2500" lon="11.1300"/><trkpt lat="46.0700" lon="11.1200"/>
+    <trkpt lat="45.9700" lon="11.0400"/><trkpt lat="45.8850" lon="10.8400"/>
+  </trkseg></trk>
+</gpx>

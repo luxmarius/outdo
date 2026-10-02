@@ -1,0 +1,37 @@
+---
+/**
+ * Leaflet map that draws a GPX track. Loads Leaflet from a CDN only on pages that use it.
+ * The GPX file lives in /public/gpx. Elevation isn't drawn here — the DayList does that.
+ */
+import { url } from '../lib/url';
+interface Props { gpx: string; id?: string }
+const { gpx, id = 'route-map' } = Astro.props;
+const src = url(gpx);
+---
+<div class="map" id={id} data-gpx={src} role="img" aria-label="Map of the route"></div>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script is:inline>
+  (async () => {
+    const box = document.querySelector('[data-gpx]');
+    if (!box || !window.L) return;
+    const res = await fetch(box.dataset.gpx);
+    if (!res.ok) { box.textContent = 'Route file not found yet. Add the GPX file to /public/gpx.'; box.classList.add('empty'); return; }
+    const xml = new DOMParser().parseFromString(await res.text(), 'application/xml');
+    const pts = [...xml.querySelectorAll('trkpt, rtept')].map((p) => [parseFloat(p.getAttribute('lat')), parseFloat(p.getAttribute('lon'))]);
+    if (pts.length === 0) { box.textContent = 'GPX file has no track points.'; box.classList.add('empty'); return; }
+    const map = L.map(box, { scrollWheelZoom: false });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 17, attribution: '© OpenStreetMap contributors',
+    }).addTo(map);
+    const line = L.polyline(pts, { color: '#37583b', weight: 4, opacity: 0.9 }).addTo(map);
+    L.circleMarker(pts[0], { radius: 6, color: '#171c18', fillColor: '#fff', fillOpacity: 1 }).addTo(map).bindTooltip('Start');
+    L.circleMarker(pts[pts.length - 1], { radius: 6, color: '#171c18', fillColor: '#6aad63', fillOpacity: 1 }).addTo(map).bindTooltip('Finish');
+    map.fitBounds(line.getBounds(), { padding: [24, 24] });
+  })();
+</script>
+
+<style>
+  .map { width: 100%; aspect-ratio: 16 / 9; min-height: 320px; background: var(--line); border-radius: var(--radius); overflow: hidden; }
+  .map.empty { display: grid; place-items: center; color: var(--ink-soft); }
+</style>

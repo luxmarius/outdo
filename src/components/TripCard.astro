@@ -1,0 +1,26 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { url } from '../lib/url';
+import { km } from '../lib/format';
+interface Props { trip: CollectionEntry<'trips'> }
+const { trip } = Astro.props;
+const d = trip.data;
+const totalKm = d.days.reduce((sum, day) => sum + day.km, 0);
+---
+<a class="card" href={url(`/trips/${trip.id}`)}>
+  <div class="image"><img src={url(d.cover)} alt="" loading="lazy" /><span aria-hidden="true">↗</span></div>
+  <div class="body"><p class="meta">{d.start.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })} · {d.countries.join(' / ')}</p><h3>{d.title}</h3><p class="tagline">{d.tagline}</p><p class="stats">{d.days.length} days · {km(totalKm)} · {d.riders.join(', ')}</p></div>
+</a>
+<style>
+  .card { display: block; color: inherit; text-decoration: none; min-width: 0; }
+  .image { position: relative; overflow: hidden; background: var(--line); }
+  .image img { aspect-ratio: 3 / 2; width: 100%; object-fit: cover; transition: transform 350ms ease; }
+  .image span { position: absolute; right: 1rem; bottom: 1rem; display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: 50%; background: var(--stone); font-size: 1.25rem; }
+  .body { padding-top: 1.25rem; }
+  h3 { margin: 0.35rem 0 0.5rem; font-size: clamp(1.8rem, 3vw, 3rem); }
+  .card:hover h3 { color: var(--lake); }
+  .card:hover img { transform: scale(1.025); }
+  .meta { font-size: 0.8rem; }
+  .tagline { color: var(--ink-soft); font-size: 0.95rem; }
+  .stats { margin: 0; font-size: 0.8rem; }
+</style>

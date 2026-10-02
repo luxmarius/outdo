@@ -1,0 +1,41 @@
+/* Outdo globe — styles. Colours are tokens so you can match any site. */
+.og-globe-wrap {
+  --og-bg: #eef1ea;          /* page/space colour around the sphere */
+  --og-ink: #1a241d;         /* text */
+  --og-ink-soft: #5d6a62;    /* secondary text */
+  --og-line: #37583b;        /* real route line */
+  --og-line-sketch: #6f9a6a; /* sketch route line (dashed) */
+  --og-dot: #6aad63;         /* real route dot */
+  --og-accent: #4f7a53;      /* links, sketch dot ring */
+  --og-radius: 14px;
+  --og-font: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+  --og-font-title: 'Instrument Serif', Georgia, serif;
+  position: relative;
+  font-family: var(--og-font);
+  color: var(--og-ink);
+}
+.og-globe { width: 100%; height: clamp(440px, 72vh, 760px); border-radius: var(--og-radius); overflow: hidden; background: var(--og-bg); }
+.og-reset {
+  position: absolute; top: 1rem; left: 1rem; z-index: 2;
+  font: 500 0.9rem var(--og-font); color: var(--og-ink); background: rgba(255, 255, 255, 0.92);
+  border: 0; border-radius: 999px; padding: 0.5rem 1rem; cursor: pointer;
+}
+.og-reset:hover { background: #fff; }
+.og-dot {
+  width: 16px; height: 16px; padding: 0; border-radius: 50%; cursor: pointer;
+  background: var(--og-dot); border: 2px solid #fff; box-shadow: 0 0 0 5px rgba(106, 173, 99, 0.28);
+}
+.og-dot.sketch { background: #fff; border-color: var(--og-accent); box-shadow: 0 0 0 5px rgba(79, 122, 83, 0.15); }
+.og-popup .maplibregl-popup-content {
+  padding: 0; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 12px 40px rgba(23, 28, 24, 0.18); font-family: var(--og-font); color: var(--og-ink);
+}
+.og-popup .og-card { display: block; width: 260px; text-decoration: none; color: inherit; }
+.og-popup .og-card img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; display: block; }
+.og-popup .og-card strong { display: block; font-family: var(--og-font-title); font-weight: 400; font-size: 1.45rem; line-height: 1.1; padding: 1rem 1rem 0.3rem; }
+.og-popup .og-card .og-meta { display: block; padding: 0 1rem; font-size: 0.9rem; color: var(--og-ink-soft); }
+.og-popup .og-card .og-meta:last-child { padding-bottom: 1rem; }
+.og-popup .og-card .og-go { display: block; padding: 0.7rem 1rem 1rem; color: var(--og-accent); font-weight: 500; }
+.og-popup .maplibregl-popup-close-button { font-size: 1.3rem; line-height: 1; padding: 0.3rem 0.6rem; color: var(--og-ink); background: rgba(255, 255, 255, 0.85); border-radius: 0 12px 0 8px; }
+.og-globe .maplibregl-ctrl-group { border-radius: 10px; box-shadow: 0 2px 10px rgba(23, 28, 24, 0.12); }
+.og-globe .maplibregl-ctrl-attrib { font-size: 10px; }

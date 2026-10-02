@@ -1,0 +1,51 @@
+---
+/**
+ * The day-by-day breakdown. The signature Outdo component:
+ * big distance figure, ascent/descent, and a bar whose height is proportional
+ * to the climbing that day so the profile of the trip is readable at a glance.
+ */
+import { km, metres } from '../lib/format';
+interface Day { title: string; km: number; ascent: number; descent: number; summary: string }
+interface Props { days: Day[] }
+const { days } = Astro.props;
+const maxUp = Math.max(...days.map((d) => d.ascent), 1);
+---
+<ol class="days">
+  {days.map((d, i) => (
+    <li class="day">
+      <div class="num">Day {i + 1}</div>
+      <div class="main">
+        <h3>{d.title}</h3>
+        <p>{d.summary}</p>
+      </div>
+      <div class="stats" aria-label={`${km(d.km)}, ${metres(d.ascent)} ascent, ${metres(d.descent)} descent`}>
+        <div class="bar" style={`--h:${Math.round((d.ascent / maxUp) * 100)}%`}></div>
+        <div class="fig">
+          <strong>{km(d.km)}</strong>
+          <span>↑ {metres(d.ascent)}</span>
+          <span>↓ {metres(d.descent)}</span>
+        </div>
+      </div>
+    </li>
+  ))}
+</ol>
+
+<style>
+  .days { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  .day {
+    display: grid; grid-template-columns: 1fr; gap: 0.75rem 2.5rem;
+    padding: 2.25rem 0; border-bottom: 1px solid var(--line);
+  }
+  @media (min-width: 760px) { .day { grid-template-columns: 6rem 1fr 13rem; align-items: start; } }
+  .num { color: var(--ink-soft); font-size: 0.95rem; padding-top: 0.5rem; }
+  .main h3 { margin-bottom: 0.4rem; }
+  .main p { margin: 0; color: var(--ink-soft); }
+  .stats { display: flex; gap: 1rem; align-items: stretch; }
+  .bar {
+    width: 12px; align-self: end; height: 4.5rem; border-radius: 6px;
+    background: linear-gradient(to top, var(--bar) var(--h), var(--bar-soft) var(--h));
+  }
+  .fig { display: flex; flex-direction: column; line-height: 1.3; }
+  .fig strong { font-family: var(--font-display); font-weight: 800; font-size: 2rem; letter-spacing: -0.01em; }
+  .fig span { color: var(--ink-soft); font-size: 0.95rem; }
+</style>

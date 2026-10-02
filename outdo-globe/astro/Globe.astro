@@ -1,0 +1,178 @@
+---
+/**
+ * A spinnable globe with every Outdo route drawn on it.
+ * Routes come from the trips collection (their GPX files). Click a dot to zoom
+ * to that route and open a card linking to the trip page.
+ *
+ * src/data/route-sketches.json is TEMPORARY: rough lines for trips that have
+ * no page yet, so the globe shows the whole body of work. Delete entries from
+ * it as the real trips are added.
+ *
+ * MapLibre GL is loaded from a CDN only on pages that use this component.
+ * Basemap: OpenFreeMap "positron" vector style (free, no API key), labels hidden until zoomed in.
+ */
+import { url } from '../lib/url';
+import { formatDateRange } from '../lib/format';
+import sketches from '../data/route-sketches.json';
+
+interface Trip { id: string; title: string; tagline: string; start: Date; end: Date; countries: string[]; cover: string; gpx?: string }
+interface Props { trips: Trip[] }
+const { trips } = Astro.props;
+
+const data = {
+  trips: trips.filter((t) => t.gpx).map((t) => ({
+    id: t.id,
+    title: t.title,
+    dates: formatDateRange(t.start, t.end),
+    countries: t.countries,
+    cover: url(t.cover),
+    gpx: url(t.gpx!),
+    href: url(`/trips/${t.id}`),
+  })),
+  sketches,
+};
+---
+<div class="globe-wrap">
+  <div class="globe" id="globe" data-routes={JSON.stringify(data)} aria-label="Globe showing every Outdo route"></div>
+  <button class="globe-reset" type="button" hidden>Whole globe</button>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css" />
+<script is:inline src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
+<script is:inline>
+  (() => {
+    const box = document.getElementById('globe');
+    if (!box || !window.maplibregl) return;
+    const data = JSON.parse(box.dataset.routes);
+    const reset = document.querySelector('.globe-reset');
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const HOME = { center: [14, 40], zoom: 1.3 };
+
+    const map = new maplibregl.Map({
+      container: box,
+      center: HOME.center,
+      zoom: HOME.zoom,
+      minZoom: 0.7,
+      dragRotate: false,
+      pitchWithRotate: false,
+      cooperativeGestures: true,
+      attributionControl: { compact: true },
+      // OpenFreeMap Positron: free, no API key, light and quiet. Globe projection is set once the style is in.
+      style: 'https://tiles.openfreemap.org/styles/positron',
+    });
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+    map.on('style.load', () => {
+      map.setProjection({ type: 'globe' });
+      map.setSky({ 'atmosphere-blend': 0 });
+      // the page shows through around the sphere, so match the page background
+      const bg = map.getStyle().layers.find((l) => l.type === 'background');
+      if (bg) map.setPaintProperty(bg.id, 'background-color', '#eef1ea');
+      // keep the globe quiet: no labels until you're zoomed into a route
+      map.getStyle().layers.filter((l) => l.type === 'symbol').forEach((l) => map.setLayerZoomRange(l.id, Math.max(l.minzoom || 0, 5), l.maxzoom ?? 24));
+    });
+
+    // slow ambient spin until the visitor touches the globe
+    let spinning = !reduced;
+    const frame = () => {
+      if (!spinning) return;
+      const c = map.getCenter();
+      map.jumpTo({ center: [c.lng + 0.035, c.lat] });
+      requestAnimationFrame(frame);
+    };
+    const stop = () => { spinning = false; };
+    ['mousedown', 'touchstart', 'wheel', 'zoomstart'].forEach((e) => map.on(e, stop));
+
+    const popups = [];
+    const closePopups = () => popups.forEach((p) => p.remove());
+
+    const bounds = (coords) => coords.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
+
+    function addLine(id, coords, sketch) {
+      map.addSource(id, { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords } } });
+      map.addLayer({
+        id, type: 'line', source: id,
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: Object.assign(
+          { 'line-color': sketch ? '#6f9a6a' : '#37583b', 'line-width': ['interpolate', ['linear'], ['zoom'], 1, 2, 8, 4] },
+          sketch ? { 'line-dasharray': [1.5, 2] } : {}
+        ),
+      });
+    }
+
+    function addDot(coords, html, sketch, label) {
+      const mid = coords[Math.floor(coords.length / 2)];
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'globe-dot' + (sketch ? ' sketch' : '');
+      el.setAttribute('aria-label', label);
+      const popup = new maplibregl.Popup({ offset: 18, maxWidth: '300px', className: 'globe-popup' }).setHTML(html);
+      popups.push(popup);
+      new maplibregl.Marker({ element: el }).setLngLat(mid).setPopup(popup).addTo(map);
+      el.addEventListener('click', () => {
+        stop();
+        map.fitBounds(bounds(coords), { padding: 90, maxZoom: 9, duration: 1500 });
+        reset.hidden = false;
+      });
+    }
+
+    async function loadGpx(src) {
+      const r = await fetch(src);
+      if (!r.ok) return null;
+      const xml = new DOMParser().parseFromString(await r.text(), 'application/xml');
+      const pts = [...xml.querySelectorAll('trkpt, rtept')].map((p) => [+p.getAttribute('lon'), +p.getAttribute('lat')]);
+      if (!pts.length) return null;
+      const step = Math.max(1, Math.ceil(pts.length / 600));
+      return pts.filter((_, i) => i % step === 0 || i === pts.length - 1);
+    }
+
+    map.on('load', async () => {
+      requestAnimationFrame(frame);
+      for (const t of data.trips) {
+        const coords = await loadGpx(t.gpx);
+        if (!coords) continue;
+        addLine('route-' + t.id, coords, false);
+        addDot(coords, `<a class="pop" href="${t.href}"><img src="${t.cover}" alt=""><strong>${t.title}</strong><span class="meta">${t.dates} · ${t.countries.join(', ')}</span><span class="go">See the trip →</span></a>`, false, t.title);
+      }
+      data.sketches.forEach((s, i) => {
+        addLine('sketch-' + i, s.points, true);
+        addDot(s.points, `<div class="pop"><strong>${s.title}</strong><span class="meta">${s.countries.join(', ')}</span><span class="meta soon">Trip page coming soon</span></div>`, true, s.title);
+      });
+    });
+
+    reset.addEventListener('click', () => {
+      closePopups();
+      reset.hidden = true;
+      map.flyTo({ center: HOME.center, zoom: HOME.zoom, duration: 1600 });
+      map.once('moveend', () => { if (!reduced) { spinning = true; frame(); } });
+    });
+  })();
+</script>
+
+<style is:global>
+  .globe-wrap { position: relative; }
+  .globe { width: 100%; height: clamp(440px, 72vh, 760px); border-radius: var(--radius); overflow: hidden; background: var(--stone); }
+  .globe-reset {
+    position: absolute; top: 1rem; left: 1rem; z-index: 2;
+    font: 500 0.9rem var(--font-body); color: var(--ink); background: rgba(255, 255, 255, 0.92);
+    border: 0; border-radius: 999px; padding: 0.5rem 1rem; cursor: pointer;
+  }
+  .globe-reset:hover { background: #fff; }
+  .globe-dot {
+    width: 16px; height: 16px; padding: 0; border-radius: 50%; cursor: pointer;
+    background: var(--leaf); border: 2px solid #fff; box-shadow: 0 0 0 5px rgba(106, 173, 99, 0.28);
+  }
+  .globe-dot.sketch { background: #fff; border-color: var(--moss); box-shadow: 0 0 0 5px rgba(79, 122, 83, 0.15); }
+  .globe-popup .maplibregl-popup-content {
+    padding: 0; border-radius: 12px; overflow: hidden;
+    box-shadow: 0 12px 40px rgba(23, 28, 24, 0.18); font-family: var(--font-body); color: var(--ink);
+  }
+  .globe-popup .pop { display: block; width: 260px; text-decoration: none; color: inherit; }
+  .globe-popup .pop img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; display: block; }
+  .globe-popup .pop strong { display: block; font-family: var(--font-display); font-weight: 400; font-size: 1.45rem; line-height: 1.1; padding: 1rem 1rem 0.3rem; }
+  .globe-popup .pop .meta { display: block; padding: 0 1rem; font-size: 0.9rem; color: var(--ink-soft); }
+  .globe-popup .pop .soon { padding-bottom: 1rem; margin-top: 0.4rem; }
+  .globe-popup .pop .go { display: block; padding: 0.7rem 1rem 1rem; color: var(--moss); font-weight: 500; }
+  .globe-popup .maplibregl-popup-close-button { font-size: 1.3rem; line-height: 1; padding: 0.3rem 0.6rem; color: var(--ink); background: rgba(255, 255, 255, 0.85); border-radius: 0 12px 0 8px; }
+  .globe .maplibregl-ctrl-group { border-radius: 10px; box-shadow: 0 2px 10px rgba(23, 28, 24, 0.12); }
+  .globe .maplibregl-ctrl-attrib { font-size: 10px; }
+</style>

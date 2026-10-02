@@ -1,0 +1,31 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { url } from '../../lib/url';
+import { formatDate } from '../../lib/format';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog', ({ data }) => !data.draft);
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+}
+const { post } = Astro.props;
+const { Content } = await render(post);
+---
+<Base title={post.data.title} description={post.data.description} image={post.data.cover}>
+  <article class="section wrap">
+    <p class="meta">{formatDate(post.data.date)} · {post.data.author}</p>
+    <h1>{post.data.title}</h1>
+    <p class="lede">{post.data.description}</p>
+    {post.data.cover && <img class="cover" src={url(post.data.cover)} alt="" />}
+    <div class="prose"><Content /></div>
+    <p class="back"><a href={url('/blog')}>← All notes</a></p>
+  </article>
+</Base>
+
+<style>
+  article { max-width: 760px; }
+  h1 { font-size: clamp(2.4rem, 6vw, 4.5rem); }
+  .lede { color: var(--ink-soft); margin-bottom: 2.5rem; }
+  .cover { border-radius: var(--radius); margin-bottom: 3rem; }
+  .back { margin-top: 3.5rem; }
+</style>

@@ -1,0 +1,78 @@
+---
+import { url } from '../lib/url';
+interface Props { images: { src: string; alt: string }[] }
+const { images } = Astro.props;
+---
+{images.length > 0 && <outdo-gallery>
+  <div class="gallery">{images.map((img, index) => (
+    <figure class:list={{ wide: index % 5 === 0 }}><a href={url(img.src)} data-photo data-caption={img.alt} aria-label={`Enlarge photo: ${img.alt}`}><img src={url(img.src)} alt={img.alt} loading="lazy" /><span class="enlarge" aria-hidden="true">↗</span></a></figure>
+  ))}</div>
+  <dialog aria-label="Trip photographs">
+    <div class="viewer">
+      <div class="viewer-head"><span class="photo-count" aria-live="polite"></span><button class="close" type="button" aria-label="Close photographs">Close <span aria-hidden="true">×</span></button></div>
+      <img class="viewer-image" alt="" />
+      <div class="viewer-bottom"><button class="previous" type="button" aria-label="Previous photograph">←</button><p class="caption" aria-live="polite"></p><button class="next" type="button" aria-label="Next photograph">→</button></div>
+    </div>
+  </dialog>
+</outdo-gallery>}
+<script>
+  class OutdoGallery extends HTMLElement {
+    connectedCallback() {
+      const links = Array.from(this.querySelectorAll<HTMLAnchorElement>('[data-photo]'));
+      const dialog = this.querySelector('dialog');
+      const image = this.querySelector<HTMLImageElement>('.viewer-image');
+      const caption = this.querySelector('.caption');
+      const count = this.querySelector('.photo-count');
+      if (!dialog || !image || !links.length || this.dataset.ready) return;
+      this.dataset.ready = 'true';
+      let index = 0;
+      let previousOverflow = '';
+      const show = (next: number) => {
+        index = (next + links.length) % links.length;
+        image.src = links[index].href;
+        image.alt = links[index].dataset.caption ?? '';
+        if (caption) caption.textContent = image.alt;
+        if (count) count.textContent = `${index + 1} / ${links.length}`;
+      };
+      links.forEach((link, next) => link.addEventListener('click', (event) => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        show(next);
+        previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        dialog.showModal();
+      }));
+      this.querySelector('.close')?.addEventListener('click', () => dialog.close());
+      this.querySelector('.previous')?.addEventListener('click', () => show(index - 1));
+      this.querySelector('.next')?.addEventListener('click', () => show(index + 1));
+      dialog.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowLeft') { event.preventDefault(); show(index - 1); }
+        if (event.key === 'ArrowRight') { event.preventDefault(); show(index + 1); }
+      });
+      dialog.addEventListener('close', () => { document.body.style.overflow = previousOverflow; });
+    }
+  }
+  if (!customElements.get('outdo-gallery')) customElements.define('outdo-gallery', OutdoGallery);
+</script>
+<style>
+  outdo-gallery { display: block; }
+  .gallery { display: grid; gap: 1rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  figure { margin: 0; background: var(--line); overflow: hidden; }
+  figure.wide { grid-column: span 2; }
+  figure a { position: relative; display: block; height: 100%; }
+  figure img { width: 100%; height: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+  figure.wide img { aspect-ratio: 16 / 9; }
+  .enlarge { position: absolute; right: 0.75rem; bottom: 0.75rem; background: var(--stone); color: var(--ink); border-radius: 50%; width: 2rem; height: 2rem; display: grid; place-items: center; }
+  figure a:hover .enlarge { background: var(--lake); color: var(--white); }
+  dialog { width: 100vw; max-width: none; height: 100dvh; max-height: none; margin: 0; padding: 0; border: 0; background: var(--pine); color: var(--on-dark); }
+  dialog::backdrop { background: var(--pine); }
+  .viewer { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 1rem; width: 100%; height: 100%; padding: 1.25rem var(--gutter); }
+  .viewer-head, .viewer-bottom { display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; }
+  .photo-count { font-size: 0.8rem; }
+  .viewer-image { width: 100%; height: 100%; object-fit: contain; }
+  .viewer button { background: transparent; color: inherit; border: 1px solid var(--line-dark); padding: 0.5rem 0.9rem; min-width: 44px; min-height: 44px; }
+  .viewer button:hover { border-color: var(--on-dark); }
+  .close { display: inline-flex; gap: 1.25rem; align-items: center; font-size: 0.85rem; }
+  .caption { margin: 0; font-size: 0.9rem; text-align: center; color: var(--on-dark-soft); }
+  @media (max-width: 760px) { .gallery { gap: 0.5rem; } .caption { font-size: 0.75rem; } .viewer-bottom { gap: 0.75rem; } }
+</style>

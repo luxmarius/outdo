@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Outdo globe — demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Instrument+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="globe.css">
+  <style>
+    body { margin: 0; background: #eef1ea; color: #1a241d; font-family: 'Instrument Sans', system-ui, sans-serif; }
+    main { width: min(100% - 2.5rem, 1120px); margin: 0 auto; padding: 4rem 0; }
+    h1 { font-family: 'Instrument Serif', Georgia, serif; font-weight: 400; font-size: clamp(2.1rem, 4.8vw, 3.4rem); text-align: center; margin: 0 0 0.5rem; }
+    p { text-align: center; color: #5d6a62; margin: 0 0 2.5rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Every route so far</h1>
+    <p>Spin the globe. Click a dot to zoom into a trip.</p>
+    <div id="globe"></div>
+  </main>
+
+  <script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
+  <script src="routes.js"></script>
+  <script src="globe.js"></script>
+  <script>
+    OutdoGlobe.create(document.getElementById('globe'), {
+      routes: window.ROUTES,
+      background: '#eef1ea',          // match the page background so the sphere floats
+      onSelect: (route) => console.log('selected', route.title),
+    });
+  </script>
+</body>
+</html>

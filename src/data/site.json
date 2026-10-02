@@ -1,0 +1,81 @@
+{
+  "name": "Outdo",
+  "tagline": "Once a year we come together from different corners of the world to go on a bikepacking adventure.",
+  "description": "Friends, bikes, and the days that stay with us. Outdo is a growing journal of our bikepacking trips around the world.",
+  "home": {
+    "eyebrow": "A journal of going together",
+    "headline": [
+      "The days that",
+      "stay with us."
+    ],
+    "intro": "Friends, bikes, and somewhere new. We make time to go. This is where we keep it.",
+    "heroLink": "Explore the journal",
+    "storyLabel": "Why we go",
+    "storyTitle": "For a while, life gets simple.",
+    "storyBody": "One clear goal: get to the next place. In between, soak it all in. The nature, the people, the houses you pass. Just being outside, on your bike, away from the everyday.",
+    "storyAfterword": "We come together from different corners of the world to do this. This journal is where we keep those days — to relive them, to get excited for the next ones, and to come back together in thirty years.",
+    "journalTitle": "Some places become part of us.",
+    "journalDescription": "The trips, as we remember them. Take your time.",
+    "notesTitle": "For the next time.",
+    "notesDescription": "Things we've learned along the way, for wherever we go next.",
+    "footerTitle": "Still more out there.",
+    "footerText": "If this feels like your kind of thing, we'd love to hear from you.",
+    "memoryLabel": "After the ride",
+    "memoryTitle": "And then there are the evenings.",
+    "memoryBody": "Laughing about the day we carried our bikes for five hours straight. Sitting outside a 7-Eleven, eating as much as humanly possible. Absolutely tired. Completely there.",
+    "memoryAfterword": "These are the bits we keep talking about.",
+    "places": "Japan. Slovenia. Britain. The Alps. And on we go.",
+    "heroCover": "/images/home/reel-poster.jpg",
+    "heroVideo": "/video/home-reel.mp4"
+  },
+  "email": "outdo.travel@gmail.com",
+  "instagram": "https://www.instagram.com/outdo.co/",
+  "team": [
+    {
+      "name": "Marc Astbury",
+      "photo": "/images/team/marc.jpg"
+    },
+    {
+      "name": "Daniel Mason",
+      "photo": "/images/team/daniel.jpg"
+    },
+    {
+      "name": "Marius Lux",
+      "photo": "/images/team/marius.jpg"
+    }
+  ],
+  "faq": [
+    {
+      "q": "How often do you ride?",
+      "a": "One or two trips a year, usually five to seven days each, somewhere none of us has ridden before."
+    },
+    {
+      "q": "Can I join?",
+      "a": "Sometimes we take others with us. Email us and tell us a bit about your riding."
+    },
+    {
+      "q": "How fit do I need to be?",
+      "a": "Comfortable with 60–90 km and 1,500 m of climbing per day, several days in a row. We ride together, not fast."
+    },
+    {
+      "q": "Where do you sleep?",
+      "a": "Small hotels and guesthouses. We carry our own kit but not tents."
+    },
+    {
+      "q": "What bike do you need?",
+      "a": "Anything with 35 mm tyres or wider and low enough gears. Gravel bikes are ideal."
+    }
+  ],
+  "about": {
+    "eyebrow": "The people behind the trips",
+    "title": [
+      "Different places.",
+      "Same friends."
+    ],
+    "intro": "Outdo is our reason to get together, get outside, and spend a few days with nothing to do but ride.",
+    "peopleTitle": "See you at the start.",
+    "peopleText": "Coming together from different corners of the world, one trip at a time.",
+    "journalTitle": "Something to come back to.",
+    "journalText": "In thirty years, we want to sit around a fireplace together and go through the trips we did. The films, the photos, the routes. The things we thought we had forgotten. This is the start of that collection."
+  }
+}

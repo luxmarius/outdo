@@ -1,0 +1,131 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import { url } from '../lib/url';
+import { formatDateRange, km } from '../lib/format';
+
+interface Props { trips: CollectionEntry<'trips'>[] }
+const { trips } = Astro.props;
+const sketches = (await getCollection('routes')).sort((a, b) => a.data.order - b.data.order);
+const journal = await getCollection('journal');
+const routes = [
+  ...trips.filter(({ data }) => data.gpx).map(({ id, data }) => ({
+    id, title: data.title, place: data.countries.join(' / '),
+    dates: formatDateRange(data.start, data.end),
+    detail: `${data.days.length} riding days · ${km(data.days.reduce((sum, day) => sum + day.km, 0))}`,
+    image: url(data.cover), imageAlt: '', href: url(`/trips/${id}`),
+    gpx: url(data.gpx!), sketch: false,
+  })),
+  ...sketches.map(({ id, data }) => {
+    const preview = journal.find((entry) => entry.id === data.journal?.id)?.data;
+    return {
+      id, title: data.title, place: data.countries.join(' / '),
+      dates: '', detail: 'The story is still to come.',
+      image: preview?.kind === 'preview' ? url(preview.cover) : undefined,
+      imageAlt: preview?.kind === 'preview' ? preview.coverAlt : '',
+      href: undefined, points: data.points, sketch: true,
+    };
+  }),
+];
+---
+<outdo-globe class="globe-explorer" data-routes={JSON.stringify(routes)}>
+  <aside class="globe-index" aria-label="Choose a route">
+    <p class="eyebrow">Find a familiar place. Or somewhere new.</p>
+    <ul>
+      {routes.map((route, index) => <li>
+        <button class="route-choice" type="button" data-route={index} aria-pressed="false" disabled>
+          <span class:list={['route-dot', { sketch: route.sketch }]} aria-hidden="true"></span>
+          <span><strong>{route.title}</strong><small>{route.place}</small></span>
+          <span class="route-arrow" aria-hidden="true">↗</span>
+        </button>
+      </li>)}
+    </ul>
+    <p class="globe-note">A few lines across the world.<br />A lot of memories in between.</p>
+  </aside>
+  <div class="globe-stage">
+    <div class="globe-canvas" role="region" aria-label="Interactive globe of Outdo bike trips" aria-describedby="globe-hint"></div>
+    <div class="globe-controls" hidden>
+      <button type="button" class="globe-reset" hidden>← Whole globe</button>
+      <button type="button" class="globe-spin" aria-pressed="false">Pause rotation</button>
+    </div>
+    <p class="globe-status" role="status">Loading the globe…</p>
+    <noscript><p class="globe-noscript">Turn on JavaScript to explore the globe, or read the stories below.</p></noscript>
+    <div class="globe-caption">
+      <p id="globe-hint">Drag to explore. Select a route to get closer.</p>
+      <span>Route lines are approximate.</span>
+    </div>
+  </div>
+  {routes.map((route, index) => <template data-card={index}>
+    <article class="globe-card" aria-label={route.title}>
+      {route.image && <img src={route.image} alt={route.imageAlt} width="280" height="140" />}
+      <div class="globe-card-body">
+        <p class="globe-card-place">{route.place}</p>
+        <h3>{route.title}</h3>
+        {route.dates && <p class="globe-card-date">{route.dates}</p>}
+        <p class="globe-card-detail">{route.detail}</p>
+        {route.href && <a class="globe-card-link" href={route.href}>See the whole trip <span aria-hidden="true">↗</span></a>}
+      </div>
+    </article>
+  </template>)}
+</outdo-globe>
+
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css" />
+<script>
+  import '../scripts/globe.js';
+</script>
+
+<style is:global>
+  .globe-explorer { --globe-height: clamp(540px, 66vh, 740px); display: grid; grid-template-columns: minmax(250px, 0.8fr) minmax(0, 2fr); gap: clamp(2rem, 5vw, 5rem); align-items: center; }
+  .globe-index .eyebrow { color: var(--ink-soft); margin-bottom: 1.5rem; max-width: 24ch; }
+  .globe-index ul { padding: 0; margin: 0; list-style: none; border-top: 1px solid var(--line); }
+  .route-choice { display: flex; align-items: center; gap: 0.85rem; width: 100%; padding: 0.9rem 0; text-align: left; color: var(--ink); border: 0; border-bottom: 1px solid var(--line); background: transparent; line-height: 1.35; }
+  .route-choice strong { display: block; font-size: 0.95rem; font-weight: 500; }
+  .route-choice small { display: block; margin-top: 0.3rem; color: var(--ink-soft); font-size: 0.7rem; }
+  .route-choice:hover, .route-choice[aria-pressed='true'] { color: var(--lake); }
+  .route-choice[aria-pressed='true'] strong { font-weight: 600; }
+  .route-choice:disabled { cursor: default; }
+  .route-arrow { margin-left: auto; font-size: 1.2rem; }
+  .route-dot { flex: 0 0 7px; height: 7px; border: 1px solid var(--lake); border-radius: 50%; background: var(--lake); }
+  .route-dot.sketch { background: transparent; border-color: var(--map-sketch); }
+  .globe-note { font-size: 0.8rem; color: var(--ink-soft); margin-block: 1.5rem 0; }
+  .globe-stage { position: relative; min-width: 0; }
+  .globe-canvas { height: var(--globe-height); width: 100%; background: var(--stone); overflow: hidden; }
+  .globe-controls { position: absolute; top: 1rem; left: 1rem; display: flex; flex-wrap: wrap; gap: 0.6rem; z-index: 2; }
+  .globe-controls[hidden], .globe-controls [hidden], .globe-status[hidden] { display: none; }
+  .globe-controls button { border: 1px solid var(--line); border-radius: 999px; background: var(--paper); color: var(--ink); min-height: 40px; padding: 0.5rem 0.9rem; font-size: 0.75rem; line-height: 1.2; }
+  .globe-controls button:hover { color: var(--lake); border-color: var(--lake); }
+  .globe-status, .globe-noscript { position: absolute; top: 42%; left: 10%; right: 10%; text-align: center; color: var(--ink-soft); font-size: 0.9rem; }
+  .globe-caption { display: flex; justify-content: space-between; gap: 1rem; border-top: 1px solid var(--line); padding-top: 1rem; color: var(--ink-soft); font-size: 0.72rem; }
+  .globe-caption p { margin: 0; }
+  .globe-marker { width: 30px; height: 30px; padding: 0; border: 0; background: transparent; border-radius: 50%; }
+  .globe-marker::before { content: ''; display: block; width: 14px; height: 14px; margin: auto; border-radius: 50%; background: var(--lake); border: 2px solid var(--paper); box-shadow: 0 0 0 5px var(--map-marker-halo); }
+  .globe-marker.sketch::before { background: var(--paper); border-color: var(--map-sketch); }
+  .globe-marker:hover::before, .globe-marker[aria-pressed='true']::before { background: var(--lake); border-color: var(--paper); }
+  .globe-popup .maplibregl-popup-content { padding: 0; border-radius: 8px; overflow: hidden; background: var(--paper); box-shadow: var(--map-shadow); color: var(--ink); font: 0.85rem/1.45 var(--font-body); }
+  .globe-popup.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--paper); }
+  .globe-popup .maplibregl-popup-close-button { width: 38px; height: 38px; border-radius: 0 8px 0 8px; background: var(--paper); color: var(--ink); font-size: 1.5rem; z-index: 1; }
+  .globe-popup .maplibregl-popup-close-button:hover { background: var(--stone); }
+  .globe-card { width: 268px; max-width: calc(100vw - 64px); }
+  .globe-card img { width: 100%; height: 128px; object-fit: cover; }
+  .globe-card-body { padding: 1.1rem; }
+  .globe-card:not(:has(img)) .globe-card-body { padding-top: 2.5rem; }
+  .globe-card-place { color: var(--ink-soft); font-size: 0.65rem; margin-bottom: 0.65rem; }
+  .globe-card h3 { font-size: 1.65rem; margin-bottom: 0.65rem; }
+  .globe-card-date, .globe-card-detail { font-size: 0.75rem; margin-bottom: 0.4rem; color: var(--ink-soft); }
+  .globe-card-link { display: flex; justify-content: space-between; gap: 1rem; margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid var(--line); color: var(--lake-deep); text-decoration: none; font-weight: 500; }
+  .globe-canvas .maplibregl-ctrl-group { border-radius: var(--radius); box-shadow: none; border: 1px solid var(--line); background: var(--paper); }
+  .globe-canvas .maplibregl-ctrl-group button { width: 36px; height: 36px; }
+  .globe-canvas .maplibregl-ctrl-attrib { font: 10px/1.5 var(--font-body); color: var(--ink-soft); }
+  @media (max-width: 760px) {
+    .globe-explorer { --globe-height: 560px; grid-template-columns: 1fr; gap: 2rem; }
+    .globe-stage { grid-row: 1; margin-inline: -0.5rem; }
+    .globe-caption { flex-direction: column; gap: 0.25rem; }
+    .globe-controls { left: 0.4rem; top: 0.5rem; }
+    .globe-index .eyebrow { max-width: none; margin-bottom: 1rem; }
+    .globe-index ul { display: grid; grid-template-columns: 1fr 1fr; column-gap: 1rem; }
+    .route-choice { height: 100%; padding-block: 0.85rem; gap: 0.6rem; }
+    .route-choice strong { font-size: 0.8rem; }
+    .route-choice small { font-size: 0.65rem; }
+    .route-arrow { display: none; }
+    .globe-note { margin-top: 1rem; }
+  }
+</style>

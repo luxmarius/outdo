@@ -1,0 +1,107 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import TripHero from '../../components/TripHero.astro';
+import TripTotals from '../../components/TripTotals.astro';
+import DayList from '../../components/DayList.astro';
+import RouteMap from '../../components/RouteMap.astro';
+import Gallery from '../../components/Gallery.astro';
+import Quote from '../../components/Quote.astro';
+import TripCard from '../../components/TripCard.astro';
+import { url } from '../../lib/url';
+
+export async function getStaticPaths() {
+  const trips = await getCollection('trips', ({ data }) => !data.draft);
+  return trips.map((trip) => ({ params: { slug: trip.id }, props: { trip } }));
+}
+const { trip } = Astro.props;
+const d = trip.data;
+const { Content } = await render(trip);
+
+const all = (await getCollection('trips', ({ data }) => !data.draft)).sort((a, b) => b.data.start.valueOf() - a.data.start.valueOf());
+const idx = all.findIndex((t) => t.id === trip.id);
+const neighbours = [all[idx + 1], all[idx - 1]].filter(Boolean);
+const spotifyEmbed = d.spotify?.replace('open.spotify.com/', 'open.spotify.com/embed/');
+---
+<Base title={d.title} description={d.tagline} image={d.cover} overlayHeader>
+  <TripHero
+    title={d.title}
+    tagline={d.tagline}
+    cover={d.cover}
+    heroVideo={d.heroVideo}
+    start={d.start}
+    end={d.end}
+    countries={d.countries}
+    size="tall"
+    secondary={d.youtube ? { href: d.youtube, label: 'Watch the film ↗' } : undefined}
+  />
+
+  <nav class="trip-nav wrap" aria-label="Explore this trip">
+    <a href="#story">The story</a>
+    {d.gpx && <a href="#route">The route</a>}
+    <a href="#days">Day by day</a>
+    {d.gallery.length > 0 && <a href="#photos">Photographs</a>}
+    {spotifyEmbed && <a href="#soundtrack">Soundtrack</a>}
+  </nav>
+
+  <section class="section wrap totals">
+    <TripTotals days={d.days} countries={d.countries} riders={d.riders} />
+  </section>
+
+  <section class="section wrap prose" id="story">
+    <Content />
+  </section>
+
+  {d.gpx && (
+    <section class="section wrap">
+      <h2 id="route">The route</h2>
+      <RouteMap gpx={d.gpx} />
+    </section>
+  )}
+
+  <section class="section wrap">
+    <h2 id="days">Day by day</h2>
+    <DayList days={d.days} />
+  </section>
+
+  {d.gallery.length > 0 && (
+    <section class="section wrap">
+      <h2 id="photos">The moments in between</h2>
+      <Gallery images={d.gallery} />
+    </section>
+  )}
+
+  {d.quote && (
+    <section class="section wrap">
+      <Quote text={d.quote.text} author={d.quote.author} />
+    </section>
+  )}
+
+  {spotifyEmbed && (
+    <section class="section wrap">
+      <h2 id="soundtrack">The soundtrack</h2>
+      <iframe src={spotifyEmbed} width="100%" height="152" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Spotify player"></iframe>
+    </section>
+  )}
+
+  {neighbours.length > 0 && (
+    <section class="section wrap">
+      <h2>More trips</h2>
+      <div class="grid">{neighbours.map((t) => <TripCard trip={t} />)}</div>
+      <p style="margin-top:1.5rem"><a href={url('/trips')}>All trips</a></p>
+    </section>
+  )}
+</Base>
+
+<style>
+  .trip-nav { display: flex; gap: clamp(1.25rem, 3vw, 3rem); overflow-x: auto; padding-block: 1.4rem; border-bottom: 1px solid var(--line); }
+  .trip-nav a { color: var(--ink-soft); text-decoration: none; font-size: 0.85rem; white-space: nowrap; }
+  .trip-nav a:hover { color: var(--lake); }
+  .totals { display: flex; justify-content: center; padding-block: 3rem; }
+  h2 { margin-bottom: 2.5rem; }
+  [id] { scroll-margin-top: 2rem; }
+  iframe { border: 0; border-radius: var(--radius); }
+  .centre { margin-bottom: 2.5rem; }
+  .grid { display: grid; gap: 1.25rem; grid-template-columns: 1fr; }
+  @media (min-width: 720px) { .grid { grid-template-columns: repeat(2, 1fr); max-width: 800px; } }
+</style>

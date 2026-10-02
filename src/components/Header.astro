@@ -1,0 +1,35 @@
+---
+import Wordmark from './Wordmark.astro';
+import { url } from '../lib/url';
+interface Props { overlay?: boolean }
+const { overlay = false } = Astro.props;
+const path = Astro.url.pathname;
+const nav = [
+  { href: url('/trips'), label: 'Trips' },
+  { href: url('/blog'), label: 'Notes' },
+  { href: url('/about'), label: 'About' },
+];
+const isActive = (href: string) => path === href || path.startsWith(`${href}/`);
+---
+<header class:list={['header', { overlay }]}>
+  <div class="wrap bar">
+    <Wordmark />
+    <nav aria-label="Main">
+      {nav.map((n) => <a href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}>{n.label}</a>)}
+    </nav>
+  </div>
+</header>
+
+<style>
+  .header { position: relative; z-index: 10; color: var(--ink); }
+  .header.overlay { position: absolute; inset: 0 0 auto 0; color: var(--on-dark); background: var(--shade-header); }
+  .bar { display: flex; align-items: center; justify-content: space-between; padding-block: 1.5rem; border-bottom: 1px solid var(--line); }
+  .overlay .bar { border-color: var(--on-dark-soft); }
+  nav { display: flex; gap: clamp(1.25rem, 3vw, 2.25rem); }
+  nav a {
+    color: inherit; text-decoration: none; font-size: 0.95rem; font-weight: 500;
+    padding-block: 0.5rem; border-bottom: 1px solid transparent;
+  }
+  nav a:hover, nav a[aria-current='page'] { border-bottom-color: currentColor; }
+  @media (max-width: 420px) { .bar { --wordmark-size: 2rem; } nav { gap: 1rem; } nav a { font-size: 0.85rem; } }
+</style>
